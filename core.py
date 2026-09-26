@@ -61,6 +61,61 @@ def load_eval_cases(path: Path = EVAL_PATH) -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+ACTIVITY_MULTIPLIERS = {
+    "sedentary": 1.2,
+    "lightly_active": 1.375,
+    "moderately_active": 1.55,
+    "very_active": 1.725,
+    "extra_active": 1.9,
+}
+
+GOAL_ADJUSTMENTS = {
+    "lose": -300,
+    "maintain": 0,
+    "gain": 300,
+}
+
+
+def calculate_daily_targets(
+    age: int,
+    weight_kg: float,
+    height_cm: float,
+    calculation_sex: str,
+    activity_level: str,
+    goal: str,
+) -> dict:
+    """Estimate adult wellness targets with deterministic, auditable math."""
+    if not 18 <= age <= 100:
+        raise ValueError("Age must be between 18 and 100 for this adult-only prototype.")
+    if not 35 <= weight_kg <= 300 or not 120 <= height_cm <= 230:
+        raise ValueError("Weight or height is outside the supported prototype range.")
+    if calculation_sex not in {"female", "male"}:
+        raise ValueError("Calculation sex must be female or male.")
+    if activity_level not in ACTIVITY_MULTIPLIERS or goal not in GOAL_ADJUSTMENTS:
+        raise ValueError("Activity level or goal is not supported.")
+
+    sex_constant = 5 if calculation_sex == "male" else -161
+    bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + sex_constant
+    maintenance = bmr * ACTIVITY_MULTIPLIERS[activity_level]
+    calories = max(1200, maintenance + GOAL_ADJUSTMENTS[goal])
+
+    # Balanced general-wellness default within adult AMDR ranges:
+    # 20% protein, 50% carbohydrate, 30% fat.
+    protein_g = calories * 0.20 / 4
+    carbs_g = calories * 0.50 / 4
+    fat_g = calories * 0.30 / 9
+    return {
+        "estimated_bmr_kcal": round(bmr),
+        "estimated_maintenance_kcal": round(maintenance),
+        "estimated_daily_calories_kcal": round(calories),
+        "protein_target_g": round(protein_g),
+        "carb_target_g": round(carbs_g),
+        "fat_target_g": round(fat_g),
+        "calculation_method": "Mifflin-St Jeor; activity multiplier; goal adjustment; 20/50/30 macro split",
+        "medical_advice": False,
+    }
+
+
 def _totals(items: Iterable[MenuItem]) -> dict:
     items = tuple(items)
     return {

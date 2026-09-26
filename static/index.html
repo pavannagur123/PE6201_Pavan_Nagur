@@ -34,9 +34,21 @@
           <label>Daily food budget <output id="budget-output">S$18</output>
             <input id="budget" type="range" min="8" max="30" value="18" step="1">
           </label>
-          <div class="two-col">
-            <label>Protein target <span class="input-unit"><input id="protein" type="number" min="10" max="250" value="70">g</span></label>
-            <label>Carb target <span class="input-unit"><input id="carbs" type="number" min="20" max="500" value="150">g</span></label>
+          <div class="three-col">
+            <label>Age <span class="input-unit"><input id="age" type="number" min="18" max="100" value="25">years</span></label>
+            <label>Weight <span class="input-unit"><input id="weight" type="number" min="35" max="300" value="72" step="0.1">kg</span></label>
+            <label>Height <span class="input-unit"><input id="height" type="number" min="120" max="230" value="175" step="0.1">cm</span></label>
+          </div>
+          <div class="three-col">
+            <label>Sex used for estimate
+              <select id="calculation-sex"><option value="male">Male</option><option value="female">Female</option></select>
+            </label>
+            <label>Activity level
+              <select id="activity"><option value="sedentary">Sedentary</option><option value="lightly_active">Lightly active</option><option value="moderately_active" selected>Moderately active</option><option value="very_active">Very active</option><option value="extra_active">Extra active</option></select>
+            </label>
+            <label>Goal
+              <select id="goal"><option value="lose">Lose weight</option><option value="maintain" selected>Maintain</option><option value="gain">Gain weight</option></select>
+            </label>
           </div>
           <label>What would make this feel right for you?
             <textarea id="preferences" rows="3" placeholder="e.g. I like spicy Indian food, want variety, and avoid burgers">I like chicken and rice, but I want some variety.</textarea>
@@ -52,6 +64,7 @@
 
       <section id="results" class="results hidden" aria-live="polite">
         <div class="section-title"><div><p class="eyebrow">The recommendation</p><h2 id="result-title">A plan that clears the bar</h2></div><div class="score-badge" id="feasible-badge">Feasible</div></div>
+        <div class="target-summary" id="target-summary"></div>
         <div class="recommendation-grid">
           <article class="pick-card" id="pick-card"></article>
           <aside class="explain-card">

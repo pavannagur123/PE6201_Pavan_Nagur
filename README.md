@@ -1,6 +1,8 @@
 # MacroFit
 
-MacroFit is a course-project prototype for people who eat out and want a practical meal plan that fits a daily budget and macro targets.
+MacroFit is a course-project prototype for people who eat out and want a practical meal plan that fits a daily budget and estimated nutrition needs.
+
+The user enters age, weight, height, sex used for the estimate, activity level, goal, budget, and food preference. MacroFit calculates daily calorie and macronutrient targets on the server; the user does not need to know or enter protein and carbohydrate targets.
 
 The architecture deliberately separates two jobs:
 
@@ -46,6 +48,8 @@ OPENROUTER_MODEL=openai/gpt-5.6-sol-pro
 
 - 60 synthetic menu items across 10 dummy NTU-area outlets.
 - Per-item price, energy, protein, carbohydrate, fat, fibre, and sodium.
+- Server-side calorie estimation using the Mifflin-St Jeor equation, an activity multiplier, and a small goal adjustment.
+- Derived daily macro targets using a documented 20% protein, 50% carbohydrate, and 30% fat allocation.
 - Nutrition mapping method, source family, mapper, date, and confidence for every row.
 - Exact enumeration of 1-3 item daily plans, with fixed dummy distance from NTU North Spine included in ranking.
 - A five-plan shortlist with explicit feasibility and normalized distance scores.
@@ -99,7 +103,7 @@ The evaluation command writes a detailed JSON report under `output/evaluation/`.
 
 ```text
 app.py                 local web server and OpenRouter API adapter
-core.py                dataset loading and deterministic optimizer
+core.py                profile target calculation, dataset loading, and deterministic optimizer
 data/menu.json         60 item/outlet/price/location/distance records
 data/nutrition.json    60 macro and nutrition-provenance records
 data/eval_cases.json   20 fixed blind-evaluation cases
@@ -110,7 +114,7 @@ tests/                 optimizer tests
 
 ## Responsible-use boundaries
 
-MacroFit is a planning aid, not medical or clinical nutrition advice. Nutrition and prices are estimates. The model is not allowed to invent menu items or change numerical values; its output is validated against shortlist IDs, and invalid output falls back safely to the optimizer choice.
+MacroFit is a planning aid, not medical or clinical nutrition advice. Calorie needs, nutrition, and prices are estimates. The model is not allowed to invent menu items or change numerical values; its output is validated against shortlist IDs, and invalid output falls back safely to the optimizer choice.
 
 ## Tool contracts and security guardrails
 

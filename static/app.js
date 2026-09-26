@@ -75,8 +75,12 @@ $("#planner-form").addEventListener("submit", async (event) => {
   button.firstElementChild.textContent = "Searching all plans…";
   const body = {
     budget: +$("#budget").value,
-    protein_g: +$("#protein").value,
-    carbs_g: +$("#carbs").value,
+    age: +$("#age").value,
+    weight_kg: +$("#weight").value,
+    height_cm: +$("#height").value,
+    calculation_sex: $("#calculation-sex").value,
+    activity_level: $("#activity").value,
+    goal: $("#goal").value,
     preferences: $("#preferences").value,
     mode: $("#model-toggle").checked ? "openrouter" : "demo",
   };
@@ -95,6 +99,12 @@ $("#planner-form").addEventListener("submit", async (event) => {
 
 function renderResults(data) {
   const plan = data.model_pick;
+  const targets = data.targets;
+  $("#target-summary").innerHTML = `
+    <div><strong>${targets.estimated_daily_calories_kcal}</strong><span>estimated kcal/day</span></div>
+    <div><strong>${targets.protein_target_g}g</strong><span>protein target</span></div>
+    <div><strong>${targets.carb_target_g}g</strong><span>carbohydrate target</span></div>
+    <div><strong>${targets.fat_target_g}g</strong><span>fat target</span></div>`;
   $("#pick-card").innerHTML = planMarkup(plan);
   $("#model-reason").textContent = data.ranking.reason;
   $("#ranker-label").textContent = data.ranking.mode === "openrouter"

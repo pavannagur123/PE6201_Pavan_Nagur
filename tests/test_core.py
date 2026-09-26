@@ -1,6 +1,6 @@
 import unittest
 
-from core import demo_preference_pick, load_eval_cases, load_menu, optimize
+from core import calculate_daily_targets, demo_preference_pick, load_eval_cases, load_menu, optimize
 from evaluate import run_evaluation
 
 
@@ -18,6 +18,14 @@ class MacroFitTests(unittest.TestCase):
 
     def test_evaluation_has_twenty_cases(self):
         self.assertEqual(len(load_eval_cases()), 20)
+
+    def test_profile_is_converted_to_targets_deterministically(self):
+        targets = calculate_daily_targets(25, 72, 175, "male", "moderately_active", "maintain")
+        self.assertEqual(targets["estimated_bmr_kcal"], 1694)
+        self.assertEqual(targets["estimated_daily_calories_kcal"], 2625)
+        self.assertEqual(targets["protein_target_g"], 131)
+        self.assertEqual(targets["carb_target_g"], 328)
+        self.assertFalse(targets["medical_advice"])
 
     def test_feasible_pick_respects_constraints(self):
         result = optimize(self.menu, 18, 70, 150)

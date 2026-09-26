@@ -8,8 +8,8 @@ import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from core import ROOT, demo_preference_pick, load_menu, optimize
-from guardrails import validate_model_selection, validate_untrusted_text
+from core import ROOT, calculate_daily_targets, demo_preference_pick, load_menu, optimize
+from guardrails import validate_model_selection, validate_tool_call, validate_untrusted_text
 
 
 def load_local_env(path: Path = ROOT / ".env") -> None:
@@ -148,11 +148,25 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             if self.path == "/api/rank":
                 body["preferences"] = validate_untrusted_text(str(body.get("preferences", "")), "food preferences")
-                solution = optimize(MENU, float(body["budget"]), float(body["protein_g"]), float(body["carbs_g"]))
+                profile = validate_tool_call("calculate_daily_targets", {
+                    "age": int(body["age"]),
+                    "weight_kg": float(body["weight_kg"]),
+                    "height_cm": float(body["height_cm"]),
+                    "calculation_sex": str(body["calculation_sex"]),
+                    "activity_level": str(body["activity_level"]),
+                    "goal": str(body["goal"]),
+                })
+                targets = calculate_daily_targets(**profile)
+                solution = optimize(
+                    MENU,
+                    float(body["budget"]),
+                    targets["protein_target_g"],
+                    targets["carb_target_g"],
+                )
                 mode = body.get("mode", "openrouter")
                 ranking = demo_preference_pick(solution["shortlist"], body.get("preferences", "")) if mode == "demo" else openrouter_rank(solution["shortlist"], body.get("preferences", ""))
                 model_pick = next(p for p in solution["shortlist"] if p["plan_id"] == ranking["plan_id"])
-                self._json({"solution": solution, "model_pick": model_pick, "ranking": ranking})
+                self._json({"targets": targets, "solution": solution, "model_pick": model_pick, "ranking": ranking})
                 return
             self._json({"error": "Not found"}, 404)
         except (KeyError, ValueError, TypeError, json.JSONDecodeError) as exc:
