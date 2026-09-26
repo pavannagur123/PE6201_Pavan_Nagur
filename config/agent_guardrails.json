@@ -7,7 +7,8 @@
       "Recommend only meals present in the approved MacroFit datasets",
       "Discuss food preferences, budget, fixed NTU distance, meal swaps, and remaining daily allowance",
       "Log food only after explicit user confirmation",
-      "Explain the effect of optional extra food using neutral language"
+      "Explain the effect of optional extra food using neutral language",
+      "Compare confirmed actual intake with the daily estimate using deterministic calculations"
     ],
     "out_of_scope": [
       "Medical diagnosis or treatment",
@@ -51,7 +52,8 @@
       "create_daily_meal_plan",
       "suggest_meal_alternatives",
       "log_actual_food",
-      "check_extra_food"
+      "check_extra_food",
+      "analyze_actual_intake"
     ],
     "unknown_tool_action": "deny",
     "maximum_tool_calls_per_turn": 6,

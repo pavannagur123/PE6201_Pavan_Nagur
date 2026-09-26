@@ -50,6 +50,9 @@ OPENROUTER_MODEL=openai/gpt-5.6-sol-pro
 - Per-item price, energy, protein, carbohydrate, fat, fibre, and sodium.
 - Server-side calorie estimation using the Mifflin-St Jeor equation, an activity multiplier, and a small goal adjustment.
 - Derived daily macro targets using a documented 20% protein, 50% carbohydrate, and 30% fat allocation.
+- Exactly three scheduled meals: a light breakfast at 08:00, lunch at 13:00, and dinner at 19:00.
+- A dataset-backed S$14.80 minimum for the cheapest valid three-meal day; plans never exceed the selected budget.
+- Accept/reject controls, confirmed meal-completion logging, substitution tracking, and deterministic completed-day analysis.
 - Nutrition mapping method, source family, mapper, date, and confidence for every row.
 - Exact enumeration of 1-3 item daily plans, with fixed dummy distance from NTU North Spine included in ranking.
 - A five-plan shortlist with explicit feasibility and normalized distance scores.
@@ -106,6 +109,7 @@ app.py                 local web server and OpenRouter API adapter
 core.py                profile target calculation, dataset loading, and deterministic optimizer
 data/menu.json         60 item/outlet/price/location/distance records
 data/nutrition.json    60 macro and nutrition-provenance records
+data/meal_rules.json   meal suitability, light-breakfast allowlist, and suggested times
 data/eval_cases.json   20 fixed blind-evaluation cases
 evaluate.py            backend evaluation runner and JSON report writer
 static/                browser interface
@@ -118,7 +122,7 @@ MacroFit is a planning aid, not medical or clinical nutrition advice. Calorie ne
 
 ## Tool contracts and security guardrails
 
-- `config/tool_descriptors.json` defines strict input schemas, output contracts, preconditions, and tool-specific safety rules for the five planned tools.
+- `config/tool_descriptors.json` defines strict input schemas, output contracts, preconditions, and tool-specific safety rules for the six planned tools, including actual-intake analysis.
 - `config/agent_guardrails.json` defines the assistant scope, trust boundaries, prompt-injection policy, confirmation requirements, health boundaries, privacy rules, and monitoring events.
 - `guardrails.py` enforces the allowlist, rejects unknown fields and oversized payloads, validates ranges and item IDs, detects common prompt-injection attempts, prevents model selections outside a server shortlist, and requires confirmation for consumption or above-target extra food.
 

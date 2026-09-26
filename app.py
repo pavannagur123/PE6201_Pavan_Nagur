@@ -8,8 +8,18 @@ import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from core import ROOT, calculate_daily_targets, demo_preference_pick, load_menu, optimize
-from guardrails import validate_model_selection, validate_tool_call, validate_untrusted_text
+from core import (
+    ROOT,
+    analyze_actual_intake,
+    calculate_daily_targets,
+    demo_preference_pick,
+    load_meal_rules,
+    load_menu,
+    minimum_three_meal_budget,
+    optimize,
+    optimize_daily_meal_plan,
+)
+from guardrails import authorize_state_change, validate_model_selection, validate_tool_call, validate_untrusted_text
 
 
 def load_local_env(path: Path = ROOT / ".env") -> None:
@@ -29,6 +39,9 @@ def load_local_env(path: Path = ROOT / ".env") -> None:
 
 load_local_env()
 MENU = load_menu()
+MEAL_RULES = load_meal_rules()
+MINIMUM_BUDGET = minimum_three_meal_budget(MENU, MEAL_RULES)
+LOGGED_ENTRIES = {}
 
 
 def openrouter_rank(shortlist: list[dict], preferences: str) -> dict:
@@ -40,7 +53,10 @@ def openrouter_rank(shortlist: list[dict], preferences: str) -> dict:
     preferences = validate_untrusted_text(preferences, "food preferences")
     compact = [{
         "plan_id": p["plan_id"],
-        "items": [f"{x['item']} ({x['shop']}, {x['cuisine']})" for x in p["items"]],
+        "schedule": [
+            f"{entry['label']} at {entry['eat_at']}: {entry['item']['item']} ({entry['item']['shop']})"
+            for entry in p.get("schedule", [])
+        ],
         "totals": p["totals"],
         "feasible": p["feasible"],
     } for p in shortlist]
@@ -131,6 +147,18 @@ class Handler(SimpleHTTPRequestHandler):
             self._json({
                 "openrouter_ready": bool(os.environ.get("OPENROUTER_API_KEY")),
                 "model": os.environ.get("OPENROUTER_MODEL", "qwen/qwen3.8-flash"),
+                "minimum_three_meal_budget_sgd": MINIMUM_BUDGET,
+                "meal_rules": MEAL_RULES["schedule"],
+                "menu": [
+                    {
+                        "item_id": item.item_id,
+                        "item": item.item,
+                        "shop": item.shop,
+                        "price_sgd": item.price_sgd,
+                        "kcal": item.kcal,
+                    }
+                    for item in MENU
+                ],
             })
             return
         return super().do_GET()
@@ -157,16 +185,64 @@ class Handler(SimpleHTTPRequestHandler):
                     "goal": str(body["goal"]),
                 })
                 targets = calculate_daily_targets(**profile)
-                solution = optimize(
+                planning_args = validate_tool_call("create_daily_meal_plan", {
+                    "daily_targets": {
+                        "calories_kcal": targets["estimated_daily_calories_kcal"],
+                        "protein_g": targets["protein_target_g"],
+                        "carbs_g": targets["carb_target_g"],
+                        "fat_g": targets["fat_target_g"],
+                    },
+                    "consumed_so_far": {"calories_kcal": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0, "cost_sgd": 0},
+                    "budget_sgd": float(body["budget"]),
+                    "food_mood": body["preferences"],
+                    "dietary_restrictions": [],
+                    "allergies": [],
+                    "origin": "NTU North Spine",
+                })
+                solution = optimize_daily_meal_plan(
                     MENU,
-                    float(body["budget"]),
+                    planning_args["budget_sgd"],
+                    targets["estimated_daily_calories_kcal"],
                     targets["protein_target_g"],
                     targets["carb_target_g"],
+                    rules=MEAL_RULES,
                 )
+                if not solution["available"]:
+                    self._json({"targets": targets, "solution": solution, "model_pick": None, "ranking": None})
+                    return
                 mode = body.get("mode", "openrouter")
                 ranking = demo_preference_pick(solution["shortlist"], body.get("preferences", "")) if mode == "demo" else openrouter_rank(solution["shortlist"], body.get("preferences", ""))
                 model_pick = next(p for p in solution["shortlist"] if p["plan_id"] == ranking["plan_id"])
                 self._json({"targets": targets, "solution": solution, "model_pick": model_pick, "ranking": ranking})
+                return
+            if self.path == "/api/log":
+                user_confirmed = bool(body.pop("user_confirmed", False))
+                args = validate_tool_call("log_actual_food", body)
+                authorize_state_change("log_actual_food", user_confirmed)
+                if args["idempotency_key"] not in LOGGED_ENTRIES:
+                    item = next(item for item in MENU if item.item_id == args["item_id"])
+                    quantity = args["quantity"]
+                    LOGGED_ENTRIES[args["idempotency_key"]] = {
+                        "ledger_entry_id": args["idempotency_key"],
+                        "meal": args["meal"],
+                        "item_id": item.item_id,
+                        "item": item.item,
+                        "quantity": quantity,
+                        "consumed_so_far": {
+                            "calories_kcal": round(item.kcal * quantity, 1),
+                            "protein_g": round(item.protein_g * quantity, 1),
+                            "carbs_g": round(item.carbs_g * quantity, 1),
+                            "fat_g": round(item.fat_g * quantity, 1),
+                            "cost_sgd": round(item.price_sgd * quantity, 2),
+                        },
+                        "remaining_today": "Use analyze_actual_intake after completed meals are confirmed.",
+                    }
+                self._json(LOGGED_ENTRIES[args["idempotency_key"]])
+                return
+            if self.path == "/api/analyze":
+                args = validate_tool_call("analyze_actual_intake", body)
+                result = analyze_actual_intake(MENU, args["actual_items"], args["daily_targets"], args["budget_sgd"])
+                self._json(result)
                 return
             self._json({"error": "Not found"}, 404)
         except (KeyError, ValueError, TypeError, json.JSONDecodeError) as exc:

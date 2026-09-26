@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parent
 MENU_PATH = ROOT / "data" / "menu.json"
 NUTRITION_PATH = ROOT / "data" / "nutrition.json"
 EVAL_PATH = ROOT / "data" / "eval_cases.json"
+MEAL_RULES_PATH = ROOT / "data" / "meal_rules.json"
 
 
 @dataclass(frozen=True)
@@ -58,6 +59,10 @@ def load_menu(menu_path: Path = MENU_PATH, nutrition_path: Path = NUTRITION_PATH
 
 
 def load_eval_cases(path: Path = EVAL_PATH) -> list[dict]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_meal_rules(path: Path = MEAL_RULES_PATH) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -189,6 +194,159 @@ def optimize(menu: list[MenuItem], budget: float, protein_g: float, carbs_g: flo
         "evaluated_count": len(candidates),
         "shortlist": shortlist,
         "optimizer_pick": shortlist[0],
+    }
+
+
+def _items_for_meal(menu: list[MenuItem], rule: dict) -> list[MenuItem]:
+    allowed = set(rule.get("allowed_item_ids", []))
+    excluded = set(rule.get("excluded_item_ids", []))
+    maximum_kcal = rule.get("maximum_kcal")
+    return [
+        item for item in menu
+        if (not allowed or item.item_id in allowed)
+        and item.item_id not in excluded
+        and (maximum_kcal is None or item.kcal <= maximum_kcal)
+    ]
+
+
+def minimum_three_meal_budget(menu: list[MenuItem], rules: dict | None = None) -> float:
+    """Return the cheapest valid, distinct breakfast/lunch/dinner combination."""
+    rules = rules or load_meal_rules()
+    schedule = rules["schedule"]
+    pools = [_items_for_meal(menu, schedule[name]) for name in ("breakfast", "lunch", "dinner")]
+    prices = [
+        sum(item.price_sgd for item in combo)
+        for combo in itertools.product(*pools)
+        if len({item.item_id for item in combo}) == 3
+    ]
+    if not prices:
+        raise ValueError("The dataset has no valid breakfast, lunch, and dinner combination.")
+    return round(min(prices), 2)
+
+
+def optimize_daily_meal_plan(
+    menu: list[MenuItem],
+    budget: float,
+    calories_kcal: float,
+    protein_g: float,
+    carbs_g: float,
+    shortlist_size: int = 5,
+    rules: dict | None = None,
+) -> dict:
+    """Build exactly three scheduled meals using deterministic dataset rules."""
+    rules = rules or load_meal_rules()
+    minimum_budget = minimum_three_meal_budget(menu, rules)
+    if budget < minimum_budget:
+        return {
+            "available": False,
+            "minimum_budget_sgd": minimum_budget,
+            "message": f"No valid three-meal day is available for S${budget:.2f}. The minimum is S${minimum_budget:.2f}.",
+            "evaluated_count": 0,
+            "feasible_count": 0,
+            "shortlist": [],
+            "optimizer_pick": None,
+        }
+
+    schedule_rules = rules["schedule"]
+    meal_names = ("breakfast", "lunch", "dinner")
+    pools = [_items_for_meal(menu, schedule_rules[name]) for name in meal_names]
+    candidates = []
+    evaluated_count = 0
+    for combo in itertools.product(*pools):
+        if len({item.item_id for item in combo}) != 3:
+            continue
+        evaluated_count += 1
+        totals = _totals(combo)
+        if totals["price_sgd"] > budget:
+            continue
+        feasible, score, gaps = _score(totals, budget, protein_g, carbs_g, len({x.shop for x in combo}))
+        calorie_floor = calories_kcal * 0.8
+        calorie_gap = max(0.0, calorie_floor - totals["kcal"]) / max(calorie_floor, 1)
+        if calorie_gap:
+            feasible = False
+            score += calorie_gap * 2
+        gaps["calorie_gap"] = round(calorie_gap, 4)
+        plan_schedule = []
+        for meal, item in zip(meal_names, combo):
+            rule = schedule_rules[meal]
+            plan_schedule.append({
+                "meal": meal,
+                "label": rule["label"],
+                "eat_at": rule["eat_at"],
+                "window": rule["window"],
+                "item": asdict(item),
+            })
+        candidates.append({
+            "plan_id": "+".join(item.item_id for item in combo),
+            "items": [asdict(item) for item in combo],
+            "schedule": plan_schedule,
+            "totals": totals,
+            "feasible": feasible,
+            "score": round(score, 5),
+            "gaps": gaps,
+        })
+
+    candidates.sort(key=lambda x: (not x["feasible"], x["score"], x["totals"]["price_sgd"], x["plan_id"]))
+    shortlist = candidates[:shortlist_size]
+    return {
+        "available": bool(shortlist),
+        "minimum_budget_sgd": minimum_budget,
+        "message": "" if shortlist else "No valid three-meal plan was found.",
+        "inputs": {
+            "budget": budget,
+            "calories_kcal": calories_kcal,
+            "protein_g": protein_g,
+            "carbs_g": carbs_g,
+        },
+        "evaluated_count": evaluated_count,
+        "feasible_count": sum(1 for candidate in candidates if candidate["feasible"]),
+        "shortlist": shortlist,
+        "optimizer_pick": shortlist[0] if shortlist else None,
+    }
+
+
+def analyze_actual_intake(menu: list[MenuItem], actual_items: list[dict], targets: dict, budget_sgd: float) -> dict:
+    """Compare confirmed consumption with the deterministic daily estimate."""
+    menu_by_id = {item.item_id: item for item in menu}
+    totals = {"price_sgd": 0.0, "kcal": 0.0, "protein_g": 0.0, "carbs_g": 0.0, "fat_g": 0.0}
+    for entry in actual_items:
+        item = menu_by_id.get(entry["item_id"])
+        if item is None:
+            raise ValueError(f"Unknown menu item: {entry['item_id']}.")
+        quantity = float(entry["quantity"])
+        if not 0 < quantity <= 10:
+            raise ValueError("Quantity must be greater than 0 and at most 10.")
+        totals["price_sgd"] += item.price_sgd * quantity
+        totals["kcal"] += item.kcal * quantity
+        totals["protein_g"] += item.protein_g * quantity
+        totals["carbs_g"] += item.carbs_g * quantity
+        totals["fat_g"] += item.fat_g * quantity
+
+    totals = {key: round(value, 1 if key != "price_sgd" else 2) for key, value in totals.items()}
+    calorie_target = float(targets["calories_kcal"])
+    calorie_difference = round(totals["kcal"] - calorie_target)
+    if calorie_difference > 0:
+        status = "above_estimate"
+        message = f"Your logged food is about {calorie_difference} kcal above today's estimate."
+    elif calorie_difference < 0:
+        status = "below_estimate"
+        message = f"Your logged food is about {abs(calorie_difference)} kcal below today's estimate."
+    else:
+        status = "at_estimate"
+        message = "Your logged food matches today's calorie estimate."
+    return {
+        "status": status,
+        "message": message,
+        "actual_totals": totals,
+        "differences": {
+            "calories_kcal": calorie_difference,
+            "protein_g": round(totals["protein_g"] - float(targets["protein_g"]), 1),
+            "carbs_g": round(totals["carbs_g"] - float(targets["carbs_g"]), 1),
+            "fat_g": round(totals["fat_g"] - float(targets["fat_g"]), 1),
+            "budget_sgd": round(totals["price_sgd"] - budget_sgd, 2),
+        },
+        "within_budget": totals["price_sgd"] <= budget_sgd,
+        "medical_advice": False,
     }
 
 

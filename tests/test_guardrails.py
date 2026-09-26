@@ -59,6 +59,23 @@ class GuardrailTests(unittest.TestCase):
         with self.assertRaisesRegex(GuardrailViolation, "250 kcal"):
             authorize_extra_food(2450, 2200, user_confirmed=False)
 
+    def test_actual_intake_tool_accepts_dataset_items(self):
+        args = {
+            "actual_items": [{"meal": "breakfast", "item_id": "B01", "quantity": 1}],
+            "daily_targets": {"calories_kcal": 2200, "protein_g": 110, "carbs_g": 275, "fat_g": 73},
+            "budget_sgd": 20,
+        }
+        self.assertEqual(validate_tool_call("analyze_actual_intake", args), args)
+
+    def test_actual_intake_tool_rejects_nested_unknown_item(self):
+        args = {
+            "actual_items": [{"meal": "breakfast", "item_id": "Z99", "quantity": 1}],
+            "daily_targets": {"calories_kcal": 2200, "protein_g": 110, "carbs_g": 275, "fat_g": 73},
+            "budget_sgd": 20,
+        }
+        with self.assertRaisesRegex(GuardrailViolation, "unknown_item"):
+            validate_tool_call("analyze_actual_intake", args)
+
 
 if __name__ == "__main__":
     unittest.main()

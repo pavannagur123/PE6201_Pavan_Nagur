@@ -137,9 +137,14 @@ def validate_tool_call(tool_name: str, arguments: dict) -> dict:
         for index, text in enumerate(arguments.get(key, [])):
             arguments[key][index] = validate_untrusted_text(text, key)
 
+    item_ids = []
     for key in ("item_id", "rejected_item_id"):
-        if key in arguments and arguments[key] not in MENU_IDS:
-            raise GuardrailViolation("unknown_item", f"{arguments[key]} is not an approved dataset item.")
+        if key in arguments:
+            item_ids.append(arguments[key])
+    item_ids.extend(entry.get("item_id") for entry in arguments.get("actual_items", []) if isinstance(entry, dict))
+    for item_id in item_ids:
+        if item_id not in MENU_IDS:
+            raise GuardrailViolation("unknown_item", f"{item_id} is not an approved dataset item.")
     return arguments
 
 

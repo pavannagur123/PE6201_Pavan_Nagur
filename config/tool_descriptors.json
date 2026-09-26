@@ -50,9 +50,10 @@
         }
       },
       "output_contract": {
-        "required": ["breakfast", "lunch", "dinner", "daily_totals", "remaining_targets", "within_budget", "within_calorie_target"],
+        "required": ["breakfast", "lunch", "dinner", "meal_times", "daily_totals", "remaining_targets", "within_budget", "within_calorie_target", "minimum_budget_sgd"],
         "item_reference_rule": "Every meal item_id must exist in menu.json and nutrition.json.",
-        "calculation_rule": "The server must recompute all totals from dataset values; never accept totals authored by the model."
+        "calculation_rule": "The server must recompute all totals from dataset values; never accept totals authored by the model.",
+        "meal_rule": "Breakfast must come from the light-breakfast allowlist; lunch and dinner must come from their server-owned meal pools."
       },
       "guardrails": [
         "The model may rank only the shortlist produced by the optimizer.",
@@ -146,6 +147,45 @@
         "If projected intake exceeds the estimate, show the amount and require explicit confirmation before logging.",
         "Do not recommend compensatory restriction, purging, or excessive exercise.",
         "Treat requested_food as untrusted preference text."
+      ]
+    },
+    {
+      "name": "analyze_actual_intake",
+      "description": "Deterministically compare confirmed food with the daily estimate and budget after the user completes meals, including substitutions or extra quantities.",
+      "allowed_when": "The user has accepted a plan and explicitly marked at least one meal as consumed. Any deviations must be represented by the actual dataset item and quantity.",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["actual_items", "daily_targets", "budget_sgd"],
+        "properties": {
+          "actual_items": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["meal", "item_id", "quantity"],
+              "properties": {
+                "meal": {"type": "string", "enum": ["breakfast", "lunch", "dinner", "snack", "extra"]},
+                "item_id": {"type": "string", "pattern": "^[A-Z][0-9]{2}$"},
+                "quantity": {"type": "number", "exclusiveMinimum": 0, "maximum": 10}
+              }
+            }
+          },
+          "daily_targets": {"$ref": "#/$defs/targets"},
+          "budget_sgd": {"type": "number", "minimum": 0, "maximum": 100}
+        }
+      },
+      "output_contract": {
+        "required": ["status", "message", "actual_totals", "differences", "within_budget", "medical_advice"],
+        "calculation_rule": "All totals must be rebuilt on the server from item IDs and quantities; the model cannot supply nutrition values.",
+        "language_rule": "Describe above or below estimates neutrally; do not label food or the person as good or bad."
+      },
+      "guardrails": [
+        "Analyze only explicitly confirmed consumption.",
+        "Reject unknown item IDs and quantities outside the supported range.",
+        "Do not diagnose health conditions or prescribe compensation for eating above the estimate.",
+        "Clearly distinguish a general estimate from a medical target."
       ]
     }
   ],

@@ -31,9 +31,10 @@
             <div><span class="step-label">Your day</span><h2>Set the boundaries</h2></div>
             <span class="shield">Math checked</span>
           </div>
-          <label>Daily food budget <output id="budget-output">S$18</output>
-            <input id="budget" type="range" min="8" max="30" value="18" step="1">
+          <label>Daily food budget <output id="budget-output">S$18.00</output>
+            <input id="budget" type="range" min="14.8" max="35" value="18" step="0.1">
           </label>
+          <p class="budget-floor" id="budget-floor">Checking the minimum cost for three meals…</p>
           <div class="three-col">
             <label>Age <span class="input-unit"><input id="age" type="number" min="18" max="100" value="25">years</span></label>
             <label>Weight <span class="input-unit"><input id="weight" type="number" min="35" max="300" value="72" step="0.1">kg</span></label>
@@ -57,12 +58,14 @@
             <label class="toggle"><input id="model-toggle" type="checkbox"><span></span>Use OpenRouter preference layer</label>
             <span class="hint" id="mode-hint">Demo heuristic — not LLM evidence</span>
           </div>
-          <button class="primary" type="submit"><span>Build my shortlist</span><span aria-hidden="true">→</span></button>
+          <button class="primary" type="submit"><span>Build my three-meal day</span><span aria-hidden="true">→</span></button>
           <p class="form-note">Prototype only — not medical advice. Prices and nutrition are synthetic estimates.</p>
         </form>
       </div>
 
       <section id="results" class="results hidden" aria-live="polite">
+        <div class="no-plan hidden" id="no-plan"></div>
+        <div id="plan-results">
         <div class="section-title"><div><p class="eyebrow">The recommendation</p><h2 id="result-title">A plan that clears the bar</h2></div><div class="score-badge" id="feasible-badge">Feasible</div></div>
         <div class="target-summary" id="target-summary"></div>
         <div class="recommendation-grid">
@@ -76,6 +79,30 @@
         </div>
         <div class="shortlist-head"><h3>Same shortlist, transparent math</h3><span id="search-summary"></span></div>
         <div class="shortlist" id="shortlist"></div>
+        <section class="decision-card" id="decision-card">
+          <p class="eyebrow">Your decision</p>
+          <h3>Would you eat this plan?</h3>
+          <p>The suggestion is not logged until you accept it.</p>
+          <div class="decision-actions">
+            <button class="primary accept-button" id="accept-plan" type="button">Yes, accept this plan</button>
+            <button class="outline-button" id="reject-plan" type="button">No, change the suggestion</button>
+          </div>
+          <div class="rejection-box hidden" id="rejection-box">
+            <label>What would you prefer instead?
+              <textarea id="rejection-preference" rows="2" placeholder="e.g. less spicy, vegetarian, or noodles instead of rice"></textarea>
+            </label>
+            <button class="secondary" id="try-again" type="button">Find a closer plan</button>
+          </div>
+        </section>
+        <section class="completion-card hidden" id="completion-card">
+          <p class="eyebrow">Accepted plan</p>
+          <h3>Mark meals after you eat them</h3>
+          <p>If you ate something different, select the actual item before checking the box. Each completed meal is logged only after your confirmation.</p>
+          <div id="meal-checklist"></div>
+          <button class="primary hidden" id="analyze-day" type="button">Analyze what I actually ate</button>
+          <div class="intake-result hidden" id="intake-result"></div>
+        </section>
+        </div>
       </section>
     </section>
 
