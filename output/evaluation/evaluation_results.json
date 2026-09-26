@@ -1,0 +1,597 @@
+{
+  "summary": {
+    "generated_at_utc": "2026-09-26T14:33:56.726581+00:00",
+    "mode": "optimizer",
+    "dataset_items": 60,
+    "dataset_outlets": 10,
+    "origin": "NTU North Spine",
+    "cases": 20,
+    "constraint_pass_count": 20,
+    "constraint_pass_rate": 1.0,
+    "preference_layer_cases": 0,
+    "preference_pick_changed_count": 0,
+    "note": "Changed picks are not wins. Human blind judgments from the web app are required to measure preference win rate."
+  },
+  "cases": [
+    {
+      "case_id": "E01",
+      "inputs": {
+        "budget": 16,
+        "protein_g": 70,
+        "carbs_g": 145,
+        "preferences": "I like chicken and rice, and I prefer familiar Chinese food."
+      },
+      "optimizer_plan_id": "H02+H03",
+      "optimizer_totals": {
+        "price_sgd": 12.3,
+        "kcal": 1040,
+        "protein_g": 70,
+        "carbs_g": 139,
+        "fat_g": 22,
+        "fibre_g": 7,
+        "sodium_mg": 1990,
+        "max_distance_km": 0.2,
+        "max_walk_min": 3
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 295,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E02",
+      "inputs": {
+        "budget": 18,
+        "protein_g": 75,
+        "carbs_g": 150,
+        "preferences": "I want Indian food with strong flavours; avoid sandwiches."
+      },
+      "optimizer_plan_id": "H01+M02",
+      "optimizer_totals": {
+        "price_sgd": 13.7,
+        "kcal": 1210,
+        "protein_g": 75,
+        "carbs_g": 148,
+        "fat_g": 35,
+        "fibre_g": 8,
+        "sodium_mg": 1950,
+        "max_distance_km": 1.2,
+        "max_walk_min": 16
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 1491,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E03",
+      "inputs": {
+        "budget": 15,
+        "protein_g": 55,
+        "carbs_g": 160,
+        "preferences": "Vegetarian, filling, and preferably a rice bowl."
+      },
+      "optimizer_plan_id": "H02+H05",
+      "optimizer_totals": {
+        "price_sgd": 11.0,
+        "kcal": 1150,
+        "protein_g": 52,
+        "carbs_g": 162,
+        "fat_g": 33,
+        "fibre_g": 7,
+        "sodium_mg": 1910,
+        "max_distance_km": 0.2,
+        "max_walk_min": 3
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 279,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E04",
+      "inputs": {
+        "budget": 20,
+        "protein_g": 90,
+        "carbs_g": 130,
+        "preferences": "High-protein meals; I enjoy grilled chicken and fish."
+      },
+      "optimizer_plan_id": "H03+I02",
+      "optimizer_totals": {
+        "price_sgd": 15.7,
+        "kcal": 1130,
+        "protein_g": 88,
+        "carbs_g": 135,
+        "fat_g": 26,
+        "fibre_g": 8,
+        "sodium_mg": 2180,
+        "max_distance_km": 0.9,
+        "max_walk_min": 12
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 3226,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E05",
+      "inputs": {
+        "budget": 14,
+        "protein_g": 60,
+        "carbs_g": 120,
+        "preferences": "Simple hawker food and not too rich."
+      },
+      "optimizer_plan_id": "H03+H06",
+      "optimizer_totals": {
+        "price_sgd": 11.3,
+        "kcal": 870,
+        "protein_g": 60,
+        "carbs_g": 118,
+        "fat_g": 17,
+        "fibre_g": 6,
+        "sodium_mg": 2040,
+        "max_distance_km": 0.2,
+        "max_walk_min": 3
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 301,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E06",
+      "inputs": {
+        "budget": 22,
+        "protein_g": 95,
+        "carbs_g": 180,
+        "preferences": "Variety matters; choose different cuisines if possible."
+      },
+      "optimizer_plan_id": "B03+B06+H02",
+      "optimizer_totals": {
+        "price_sgd": 17.5,
+        "kcal": 1460,
+        "protein_g": 95,
+        "carbs_g": 180,
+        "fat_g": 39,
+        "fibre_g": 12,
+        "sodium_mg": 2570,
+        "max_distance_km": 0.4,
+        "max_walk_min": 5
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 6849,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E07",
+      "inputs": {
+        "budget": 13,
+        "protein_g": 50,
+        "carbs_g": 115,
+        "preferences": "I like noodles more than rice and enjoy Chinese food."
+      },
+      "optimizer_plan_id": "B02+B04",
+      "optimizer_totals": {
+        "price_sgd": 11.6,
+        "kcal": 980,
+        "protein_g": 51,
+        "carbs_g": 118,
+        "fat_g": 36,
+        "fibre_g": 15,
+        "sodium_mg": 1100,
+        "max_distance_km": 0.4,
+        "max_walk_min": 5
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 277,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E08",
+      "inputs": {
+        "budget": 17,
+        "protein_g": 65,
+        "carbs_g": 170,
+        "preferences": "Vegetarian; I like lentils, tofu, and spicy flavours."
+      },
+      "optimizer_plan_id": "H01+H02",
+      "optimizer_totals": {
+        "price_sgd": 11.3,
+        "kcal": 1180,
+        "protein_g": 66,
+        "carbs_g": 154,
+        "fat_g": 33,
+        "fibre_g": 6,
+        "sodium_mg": 1850,
+        "max_distance_km": 0.2,
+        "max_walk_min": 3
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 674,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E09",
+      "inputs": {
+        "budget": 21,
+        "protein_g": 85,
+        "carbs_g": 160,
+        "preferences": "Malay food first, especially grilled fish; avoid burgers."
+      },
+      "optimizer_plan_id": "B03+B05+B06",
+      "optimizer_totals": {
+        "price_sgd": 17.2,
+        "kcal": 1290,
+        "protein_g": 85,
+        "carbs_g": 156,
+        "fat_g": 36,
+        "fibre_g": 15,
+        "sodium_mg": 1890,
+        "max_distance_km": 0.4,
+        "max_walk_min": 5
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 8153,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E10",
+      "inputs": {
+        "budget": 15,
+        "protein_g": 65,
+        "carbs_g": 135,
+        "preferences": "Portable meals for a busy day; wraps and sandwiches are convenient."
+      },
+      "optimizer_plan_id": "B06+H02",
+      "optimizer_totals": {
+        "price_sgd": 11.6,
+        "kcal": 1020,
+        "protein_g": 64,
+        "carbs_g": 135,
+        "fat_g": 24,
+        "fibre_g": 6,
+        "sodium_mg": 1810,
+        "max_distance_km": 0.4,
+        "max_walk_min": 5
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 264,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E11",
+      "inputs": {
+        "budget": 19,
+        "protein_g": 80,
+        "carbs_g": 190,
+        "preferences": "Indian rice dishes are my comfort food."
+      },
+      "optimizer_plan_id": "B01+H02+H06",
+      "optimizer_totals": {
+        "price_sgd": 15.8,
+        "kcal": 1370,
+        "protein_g": 80,
+        "carbs_g": 185,
+        "fat_g": 34,
+        "fibre_g": 12,
+        "sodium_mg": 2310,
+        "max_distance_km": 0.4,
+        "max_walk_min": 5
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 2243,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E12",
+      "inputs": {
+        "budget": 12,
+        "protein_g": 45,
+        "carbs_g": 105,
+        "preferences": "Lowest-fuss options; I am happy repeating familiar chicken meals."
+      },
+      "optimizer_plan_id": "B01+B05",
+      "optimizer_totals": {
+        "price_sgd": 10.7,
+        "kcal": 810,
+        "protein_g": 46,
+        "carbs_g": 106,
+        "fat_g": 23,
+        "fibre_g": 13,
+        "sodium_mg": 710,
+        "max_distance_km": 0.4,
+        "max_walk_min": 5
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 153,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E13",
+      "inputs": {
+        "budget": 23,
+        "protein_g": 100,
+        "carbs_g": 165,
+        "preferences": "I prefer fish and chicken, and want cuisine variety."
+      },
+      "optimizer_plan_id": "B02+B03+H02",
+      "optimizer_totals": {
+        "price_sgd": 18.5,
+        "kcal": 1510,
+        "protein_g": 100,
+        "carbs_g": 170,
+        "fat_g": 47,
+        "fibre_g": 14,
+        "sodium_mg": 2520,
+        "max_distance_km": 0.4,
+        "max_walk_min": 5
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 7948,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E14",
+      "inputs": {
+        "budget": 16,
+        "protein_g": 60,
+        "carbs_g": 155,
+        "preferences": "No meat; prefer whole grains and legumes."
+      },
+      "optimizer_plan_id": "H01+H04",
+      "optimizer_totals": {
+        "price_sgd": 12.3,
+        "kcal": 1130,
+        "protein_g": 60,
+        "carbs_g": 147,
+        "fat_g": 34,
+        "fibre_g": 9,
+        "sodium_mg": 2230,
+        "max_distance_km": 0.2,
+        "max_walk_min": 3
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 515,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E15",
+      "inputs": {
+        "budget": 18,
+        "protein_g": 70,
+        "carbs_g": 125,
+        "preferences": "Western food; sandwiches or pasta sound good."
+      },
+      "optimizer_plan_id": "B02+H02",
+      "optimizer_totals": {
+        "price_sgd": 12.6,
+        "kcal": 1070,
+        "protein_g": 69,
+        "carbs_g": 125,
+        "fat_g": 32,
+        "fibre_g": 8,
+        "sodium_mg": 1760,
+        "max_distance_km": 0.4,
+        "max_walk_min": 5
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 2000,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E16",
+      "inputs": {
+        "budget": 14,
+        "protein_g": 55,
+        "carbs_g": 140,
+        "preferences": "Warm soup or noodles, not cold food."
+      },
+      "optimizer_plan_id": "H01+H06",
+      "optimizer_totals": {
+        "price_sgd": 10.3,
+        "kcal": 1010,
+        "protein_g": 56,
+        "carbs_g": 133,
+        "fat_g": 28,
+        "fibre_g": 5,
+        "sodium_mg": 1900,
+        "max_distance_km": 0.2,
+        "max_walk_min": 3
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 283,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E17",
+      "inputs": {
+        "budget": 20,
+        "protein_g": 85,
+        "carbs_g": 175,
+        "preferences": "Spicy Asian food and variety across meals."
+      },
+      "optimizer_plan_id": "B01+B03+H01",
+      "optimizer_totals": {
+        "price_sgd": 16.6,
+        "kcal": 1480,
+        "protein_g": 85,
+        "carbs_g": 177,
+        "fat_g": 48,
+        "fibre_g": 16,
+        "sodium_mg": 2260,
+        "max_distance_km": 0.4,
+        "max_walk_min": 5
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 4137,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E18",
+      "inputs": {
+        "budget": 17,
+        "protein_g": 75,
+        "carbs_g": 145,
+        "preferences": "Lean chicken or fish; avoid fried and creamy dishes."
+      },
+      "optimizer_plan_id": "H02+H03",
+      "optimizer_totals": {
+        "price_sgd": 12.3,
+        "kcal": 1040,
+        "protein_g": 70,
+        "carbs_g": 139,
+        "fat_g": 22,
+        "fibre_g": 7,
+        "sodium_mg": 1990,
+        "max_distance_km": 0.2,
+        "max_walk_min": 3
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 559,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E19",
+      "inputs": {
+        "budget": 15,
+        "protein_g": 50,
+        "carbs_g": 180,
+        "preferences": "Budget comfort food, especially rice and curry."
+      },
+      "optimizer_plan_id": "H01+H05",
+      "optimizer_totals": {
+        "price_sgd": 10.7,
+        "kcal": 1210,
+        "protein_g": 50,
+        "carbs_g": 164,
+        "fat_g": 40,
+        "fibre_g": 7,
+        "sodium_mg": 2020,
+        "max_distance_km": 0.2,
+        "max_walk_min": 3
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 127,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    },
+    {
+      "case_id": "E20",
+      "inputs": {
+        "budget": 22,
+        "protein_g": 90,
+        "carbs_g": 200,
+        "preferences": "I get bored easily, so maximize variety and different textures."
+      },
+      "optimizer_plan_id": "H01+H02+H06",
+      "optimizer_totals": {
+        "price_sgd": 16.1,
+        "kcal": 1570,
+        "protein_g": 90,
+        "carbs_g": 209,
+        "fat_g": 41,
+        "fibre_g": 8,
+        "sodium_mg": 2770,
+        "max_distance_km": 0.2,
+        "max_walk_min": 3
+      },
+      "constraint_checks": {
+        "within_budget": true,
+        "protein_at_least_90_percent": true,
+        "carbs_at_least_90_percent": true
+      },
+      "feasible_plan_count": 8371,
+      "plans_evaluated": 36050,
+      "all_constraints_pass": true
+    }
+  ]
+}

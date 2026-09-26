@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="MacroFit course-project prototype">
+  <title>MacroFit — meals that fit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="MacroFit home"><span class="brand-mark">M</span><span>MacroFit</span></a>
+    <nav aria-label="Main navigation">
+      <button class="nav-link active" data-view="planner">Planner</button>
+      <button class="nav-link" data-view="evaluation">Blind eval <span class="count" id="eval-count">0/20</span></button>
+      <button class="nav-link" data-view="method">Data & method</button>
+    </nav>
+    <div class="status-pill" id="model-status"><span></span>Checking model…</div>
+  </header>
+
+  <main>
+    <section class="view active" id="planner-view">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Budget-aware nutrition planning</p>
+          <h1>Meals that fit<br><em>real life.</em></h1>
+          <p class="lede">The optimizer handles the numbers. The model helps choose what you would actually want to eat.</p>
+          <div class="method-chips"><span>60 menu items</span><span>10 outlets</span><span>1 honest comparison</span></div>
+        </div>
+        <form class="planner-card" id="planner-form">
+          <div class="card-heading">
+            <div><span class="step-label">Your day</span><h2>Set the boundaries</h2></div>
+            <span class="shield">Math checked</span>
+          </div>
+          <label>Daily food budget <output id="budget-output">S$18</output>
+            <input id="budget" type="range" min="8" max="30" value="18" step="1">
+          </label>
+          <div class="two-col">
+            <label>Protein target <span class="input-unit"><input id="protein" type="number" min="10" max="250" value="70">g</span></label>
+            <label>Carb target <span class="input-unit"><input id="carbs" type="number" min="20" max="500" value="150">g</span></label>
+          </div>
+          <label>What would make this feel right for you?
+            <textarea id="preferences" rows="3" placeholder="e.g. I like spicy Indian food, want variety, and avoid burgers">I like chicken and rice, but I want some variety.</textarea>
+          </label>
+          <div class="mode-row">
+            <label class="toggle"><input id="model-toggle" type="checkbox"><span></span>Use Claude preference layer</label>
+            <span class="hint" id="mode-hint">Demo heuristic — not LLM evidence</span>
+          </div>
+          <button class="primary" type="submit"><span>Build my shortlist</span><span aria-hidden="true">→</span></button>
+          <p class="form-note">Prototype only — not medical advice. Prices and nutrition are synthetic estimates.</p>
+        </form>
+      </div>
+
+      <section id="results" class="results hidden" aria-live="polite">
+        <div class="section-title"><div><p class="eyebrow">The recommendation</p><h2 id="result-title">A plan that clears the bar</h2></div><div class="score-badge" id="feasible-badge">Feasible</div></div>
+        <div class="recommendation-grid">
+          <article class="pick-card" id="pick-card"></article>
+          <aside class="explain-card">
+            <span class="step-label" id="ranker-label">Preference layer</span>
+            <h3>Why this one?</h3>
+            <p id="model-reason"></p>
+            <div class="boundary"><strong>The boundary</strong><p>The model can only pick from five solver-approved plans. It cannot invent dishes or alter their nutrition.</p></div>
+          </aside>
+        </div>
+        <div class="shortlist-head"><h3>Same shortlist, transparent math</h3><span id="search-summary"></span></div>
+        <div class="shortlist" id="shortlist"></div>
+      </section>
+    </section>
+
+    <section class="view" id="evaluation-view">
+      <div class="page-intro">
+        <p class="eyebrow">The model must earn its place</p>
+        <h1>Which would you<br><em>actually eat?</em></h1>
+        <p>Twenty fixed cases. Same shortlist. Optimizer pick versus preference-layer pick. You judge blind.</p>
+      </div>
+      <div class="eval-progress"><div><span id="progress-label">0 of 20 judged</span><button class="text-button" id="reset-eval">Reset</button></div><div class="progress-track"><span id="progress-bar"></span></div></div>
+      <section class="eval-shell" id="eval-shell">
+        <div class="case-head"><div><span class="step-label" id="case-id">Case 01</span><h2 id="case-target">S$16 · 70g protein · 145g carbs</h2></div><p id="case-pref"></p></div>
+        <div class="eval-actions" id="eval-actions"><button class="primary" id="generate-pair">Generate blind pair</button><span id="eval-mode-note">Uses the selected ranking mode</span></div>
+        <div class="blind-grid hidden" id="blind-grid"></div>
+        <div class="tie-row hidden" id="tie-row"><button data-choice="tie">Neither / tie</button><button id="skip-case">Skip this case</button></div>
+      </section>
+      <section class="eval-summary hidden" id="eval-summary">
+        <div><p class="eyebrow">Results</p><h2>Preference scorecard</h2></div>
+        <div class="metric-grid" id="metric-grid"></div>
+        <p id="eval-caveat"></p>
+        <button class="secondary" id="export-results">Export judgments as CSV</button>
+      </section>
+    </section>
+
+    <section class="view" id="method-view">
+      <div class="page-intro compact"><p class="eyebrow">Data card & system design</p><h1>Honest inputs.<br><em>Clear jobs.</em></h1><p>This dummy set validates the pipeline, not the world.</p></div>
+      <div class="method-grid">
+        <article class="method-card accent"><span class="big-number" id="item-count">60</span><h2>menu items</h2><p>Ten dummy outlets, six items each. Menu/location and nutrition are stored as two separate JSON datasets joined by item ID.</p></article>
+        <article class="method-card"><span class="icon-box">⌁</span><h2>Nutrition matching</h2><p>Mapped by <strong>Nagur Pavan</strong> using generic USDA/HealthHub dish or component matches and portion scaling.</p><p class="warning">Not independently dietitian-verified. Confidence is recorded row by row.</p></article>
+        <article class="method-card"><span class="icon-box">✓</span><h2>The optimizer earns</h2><p>Constraint satisfaction: budget ≤ limit and both protein and carbs ≥ 90% of target. It enumerates all 1–3 item plans and ranks feasible options.</p></article>
+        <article class="method-card dark"><span class="icon-box">✦</span><h2>The model earns</h2><p>Preference alignment and a useful explanation—nothing more. Its value is measured by blind choice against the optimizer on the same shortlist.</p></article>
+      </div>
+      <div class="data-section">
+        <div class="section-title"><div><p class="eyebrow">Row-level audit trail</p><h2>The dummy menu</h2></div><label class="search"><span>⌕</span><input id="menu-search" placeholder="Search item, shop, cuisine…"></label></div>
+        <div class="table-wrap"><table><thead><tr><th>Item</th><th>Outlet</th><th>NTU location</th><th>Distance</th><th>Price</th><th>Protein</th><th>Carbs</th><th>Source match</th><th>Confidence</th></tr></thead><tbody id="menu-table"></tbody></table></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast hidden" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
