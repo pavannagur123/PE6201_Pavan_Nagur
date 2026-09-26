@@ -8,7 +8,7 @@ import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from core import ROOT, demo_preference_pick, load_eval_cases, load_menu, optimize
+from core import ROOT, demo_preference_pick, load_menu, optimize
 from guardrails import validate_model_selection, validate_untrusted_text
 
 
@@ -29,7 +29,6 @@ def load_local_env(path: Path = ROOT / ".env") -> None:
 
 load_local_env()
 MENU = load_menu()
-EVAL_CASES = load_eval_cases()
 
 
 def openrouter_rank(shortlist: list[dict], preferences: str) -> dict:
@@ -130,16 +129,9 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/api/meta":
             self._json({
-                "menu_count": len(MENU),
-                "shop_count": len({x.shop for x in MENU}),
-                "eval_count": len(EVAL_CASES),
                 "openrouter_ready": bool(os.environ.get("OPENROUTER_API_KEY")),
                 "model": os.environ.get("OPENROUTER_MODEL", "qwen/qwen3.8-27b:free"),
-                "menu": [x.__dict__ for x in MENU],
             })
-            return
-        if self.path == "/api/eval-cases":
-            self._json(EVAL_CASES)
             return
         return super().do_GET()
 
@@ -154,7 +146,7 @@ class Handler(SimpleHTTPRequestHandler):
                 result = optimize(MENU, float(body["budget"]), float(body["protein_g"]), float(body["carbs_g"]))
                 self._json(result)
                 return
-            if self.path in ("/api/rank", "/api/eval-pair"):
+            if self.path == "/api/rank":
                 body["preferences"] = validate_untrusted_text(str(body.get("preferences", "")), "food preferences")
                 solution = optimize(MENU, float(body["budget"]), float(body["protein_g"]), float(body["carbs_g"]))
                 mode = body.get("mode", "openrouter")

@@ -50,8 +50,8 @@ OPENROUTER_MODEL=openai/gpt-5.6-sol-pro
 - Exact enumeration of 1-3 item daily plans, with fixed dummy distance from NTU North Spine included in ranking.
 - A five-plan shortlist with explicit feasibility and normalized distance scores.
 - Optional OpenRouter ranking, restricted to that shortlist, using Qwen by default.
-- A blind A/B evaluator with 20 fixed user cases, randomized left/right display, local progress, and CSV export.
-- A methodology/data page that makes the dummy-data limitations visible.
+- A focused customer interface containing only the meal planner and recommendations.
+- A separate backend evaluation runner and documented data methodology for project evidence; neither is shown to end users.
 
 ## Evaluation protocol
 
