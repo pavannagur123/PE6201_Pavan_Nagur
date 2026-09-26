@@ -33,7 +33,7 @@ MENU = load_menu()
 
 def openrouter_rank(shortlist: list[dict], preferences: str) -> dict:
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-    model = os.environ.get("OPENROUTER_MODEL", "qwen/qwen3.8-27b:free").strip()
+    model = os.environ.get("OPENROUTER_MODEL", "qwen/qwen3.8-flash").strip()
     if not api_key:
         raise RuntimeError("Set OPENROUTER_API_KEY in your local .env file to enable the model.")
 
@@ -130,7 +130,7 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == "/api/meta":
             self._json({
                 "openrouter_ready": bool(os.environ.get("OPENROUTER_API_KEY")),
-                "model": os.environ.get("OPENROUTER_MODEL", "qwen/qwen3.8-27b:free"),
+                "model": os.environ.get("OPENROUTER_MODEL", "qwen/qwen3.8-flash"),
             })
             return
         return super().do_GET()

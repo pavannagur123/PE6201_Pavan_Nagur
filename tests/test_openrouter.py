@@ -27,14 +27,14 @@ class OpenRouterTests(unittest.TestCase):
         chosen = shortlist[1]["plan_id"]
         payload = {"choices": [{"message": {"content": json.dumps({"plan_id": chosen, "reason": "Matches the stated preference."})}}]}
 
-        with patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key", "OPENROUTER_MODEL": "qwen/qwen3.8-27b:free"}, clear=False):
+        with patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key", "OPENROUTER_MODEL": "qwen/qwen3.8-flash"}, clear=False):
             with patch("urllib.request.urlopen", return_value=FakeResponse(payload)) as mocked:
                 result = openrouter_rank(shortlist, "I want chicken and rice")
 
         request = mocked.call_args.args[0]
         request_body = json.loads(request.data)
         self.assertEqual(request.full_url, "https://openrouter.ai/api/v1/chat/completions")
-        self.assertEqual(request_body["model"], "qwen/qwen3.8-27b:free")
+        self.assertEqual(request_body["model"], "qwen/qwen3.8-flash")
         self.assertEqual(request_body["response_format"]["type"], "json_schema")
         self.assertEqual(result["plan_id"], chosen)
         self.assertEqual(result["mode"], "openrouter")

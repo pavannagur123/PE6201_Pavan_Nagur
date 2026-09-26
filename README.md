@@ -29,7 +29,7 @@ Edit `.env` in VS Code:
 
 ```text
 OPENROUTER_API_KEY=your-key
-OPENROUTER_MODEL=qwen/qwen3.8-27b:free
+OPENROUTER_MODEL=qwen/qwen3.8-flash
 OPENROUTER_APP_URL=http://localhost:8000
 PORT=8000
 ```
