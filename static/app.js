@@ -49,7 +49,7 @@ function planMarkup(plan) {
       <div class="meal-time"><strong>${escapeHtml(entry.eat_at)}</strong><span>${escapeHtml(entry.label)}</span></div>
       <div>
         <h3>${escapeHtml(item.item)}</h3>
-        <p>${escapeHtml(item.shop)} · ${escapeHtml(item.location_name)} · ${item.distance_km} km · ${money(item.price_sgd)}</p>
+        <p>${entry.quantity} serving${entry.quantity === 1 ? "" : "s"} · ${escapeHtml(item.shop)} · ${escapeHtml(item.location_name)} · ${item.distance_km} km · ${money(item.price_sgd * entry.quantity)}</p>
         <small>Suggested window: ${escapeHtml(entry.window)}</small>
       </div>
     </div>`;
@@ -100,6 +100,9 @@ $("#planner-form").addEventListener("submit", async (event) => {
     calculation_sex: $("#calculation-sex").value,
     activity_level: $("#activity").value,
     goal: $("#goal").value,
+    breakfast_preference: $("#breakfast-preference").value,
+    lunch_preference: $("#lunch-preference").value,
+    dinner_preference: $("#dinner-preference").value,
     preferences: $("#preferences").value,
     mode: $("#model-toggle").checked ? "openrouter" : "demo",
   };
@@ -126,7 +129,10 @@ function renderResults(data) {
   if (!data.solution.available) {
     $("#plan-results").classList.add("hidden");
     $("#no-plan").classList.remove("hidden");
-    $("#no-plan").innerHTML = `<h2>No three-meal plan at this budget</h2><p>${escapeHtml(data.solution.message)}</p>`;
+    const shortfall = data.solution.calorie_shortfall_kcal
+      ? ` The highest-calorie plan under this budget is still about ${data.solution.calorie_shortfall_kcal} kcal below the 90% threshold.`
+      : "";
+    $("#no-plan").innerHTML = `<h2>No target-matching plan at this budget</h2><p>Your calculated estimate is ${data.targets.estimated_daily_calories_kcal} kcal. ${escapeHtml(data.solution.message + shortfall)}</p>`;
     return;
   }
 
@@ -140,12 +146,17 @@ function renderResults(data) {
     <div><strong>${targets.carb_target_g}g</strong><span>carbohydrate estimate</span></div>
     <div><strong>${targets.fat_target_g}g</strong><span>fat estimate</span></div>`;
   $("#pick-card").innerHTML = planMarkup(plan);
-  $("#model-reason").textContent = data.ranking.reason;
+  const hardPreferences = Object.entries(data.solution.inputs.meal_preferences)
+    .filter(([, value]) => value !== "any")
+    .map(([meal, value]) => `${meal}: ${value}`)
+    .join(" · ");
+  $("#model-reason").textContent = `${hardPreferences ? `Hard filters applied — ${hardPreferences}. ` : ""}${data.ranking.reason}`;
   $("#ranker-label").textContent = data.ranking.mode === "openrouter"
     ? `OpenRouter · ${data.ranking.model}`
     : "Demo preference heuristic";
   $("#result-title").textContent = "Breakfast, lunch, and dinner";
-  $("#feasible-badge").textContent = plan.feasible ? "Targets met" : "Closest available";
+  const calorieCoverage = Math.round(plan.totals.kcal / targets.estimated_daily_calories_kcal * 100);
+  $("#feasible-badge").textContent = `${calorieCoverage}% calories · thresholds met`;
   $("#search-summary").textContent = `${data.solution.evaluated_count.toLocaleString()} scheduled plans checked · ${data.solution.feasible_count.toLocaleString()} meet all constraints`;
   $("#shortlist").innerHTML = data.solution.shortlist.map((option, index) => `
     <article class="mini-plan">
@@ -186,10 +197,13 @@ function menuOptions(selectedId) {
 function renderChecklist(plan) {
   $("#analyze-day").classList.add("hidden");
   $("#meal-checklist").innerHTML = plan.schedule.map((entry) => `
-    <div class="checklist-row" data-meal="${entry.meal}" data-planned-id="${entry.item.item_id}">
-      <div class="checklist-heading"><strong>${escapeHtml(entry.label)} · ${escapeHtml(entry.eat_at)}</strong><span>Planned: ${escapeHtml(entry.item.item)}</span></div>
+    <div class="checklist-row" data-meal="${entry.meal}" data-planned-id="${entry.item.item_id}" data-planned-quantity="${entry.quantity}">
+      <div class="checklist-heading"><strong>${escapeHtml(entry.label)} · ${escapeHtml(entry.eat_at)}</strong><span>Planned: ${entry.quantity} serving(s) of ${escapeHtml(entry.item.item)}</span></div>
       <label>What did you actually eat?
         <select class="actual-item">${menuOptions(entry.item.item_id)}</select>
+      </label>
+      <label>Actual servings
+        <input class="actual-quantity" type="number" min="0.5" max="10" step="0.5" value="${entry.quantity}">
       </label>
       <label class="complete-check"><input type="checkbox"> I completed this meal and confirm this log</label>
       <p class="log-status">Not logged</p>
@@ -205,10 +219,13 @@ async function logCompletedMeal(event) {
   if (!checkbox.checked) return;
   const row = checkbox.closest(".checklist-row");
   const select = row.querySelector(".actual-item");
+  const quantityInput = row.querySelector(".actual-quantity");
   const itemId = select.value;
+  const quantity = +quantityInput.value;
   const key = `meal_${Date.now()}_${row.dataset.meal}`;
   checkbox.disabled = true;
   select.disabled = true;
+  quantityInput.disabled = true;
   row.querySelector(".log-status").textContent = "Logging confirmed meal…";
   try {
     const logged = await api("/api/log", {
@@ -216,14 +233,15 @@ async function logCompletedMeal(event) {
       body: JSON.stringify({
         meal: row.dataset.meal,
         item_id: itemId,
-        quantity: 1,
+        quantity,
         status: "consumed",
         idempotency_key: key,
         user_confirmed: true,
       }),
     });
     row.dataset.loggedId = itemId;
-    const changed = itemId !== row.dataset.plannedId;
+    row.dataset.loggedQuantity = quantity;
+    const changed = itemId !== row.dataset.plannedId || quantity !== +row.dataset.plannedQuantity;
     row.querySelector(".log-status").textContent = `${logged.item} logged${changed ? " · deviation recorded" : " · as planned"}`;
     const rows = [...document.querySelectorAll(".checklist-row")];
     if (rows.every((item) => item.dataset.loggedId)) $("#analyze-day").classList.remove("hidden");
@@ -231,6 +249,7 @@ async function logCompletedMeal(event) {
     checkbox.checked = false;
     checkbox.disabled = false;
     select.disabled = false;
+    quantityInput.disabled = false;
     row.querySelector(".log-status").textContent = "Not logged";
     toast(error.message);
   }
@@ -240,7 +259,7 @@ $("#analyze-day").addEventListener("click", async () => {
   const actualItems = [...document.querySelectorAll(".checklist-row")].map((row) => ({
     meal: row.dataset.meal,
     item_id: row.dataset.loggedId,
-    quantity: 1,
+    quantity: +row.dataset.loggedQuantity,
   }));
   const targets = currentData.targets;
   try {

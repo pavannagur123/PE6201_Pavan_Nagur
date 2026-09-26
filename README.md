@@ -52,6 +52,9 @@ OPENROUTER_MODEL=openai/gpt-5.6-sol-pro
 - Derived daily macro targets using a documented 20% protein, 50% carbohydrate, and 30% fat allocation.
 - Exactly three scheduled meals: a light breakfast at 08:00, lunch at 13:00, and dinner at 19:00.
 - A dataset-backed S$14.80 minimum for the cheapest valid three-meal day; plans never exceed the selected budget.
+- Separate breakfast, lunch, and dinner constraints for any, vegetarian, or chicken; meal-specific wording such as "veg for lunch and chicken for dinner" is converted into hard optimizer filters.
+- Recommendations must reach at least 90% of calorie, protein, and carbohydrate estimates. Lunch and dinner may use 1, 1.5, or 2 declared servings with price and nutrition scaled by Python.
+- If the selected budget cannot meet that threshold, the tool returns no plan and reports the calculated minimum target-matching budget instead of presenting an under-target plan.
 - Accept/reject controls, confirmed meal-completion logging, substitution tracking, and deterministic completed-day analysis.
 - Nutrition mapping method, source family, mapper, date, and confidence for every row.
 - Exact enumeration of 1-3 item daily plans, with fixed dummy distance from NTU North Spine included in ranking.

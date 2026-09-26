@@ -18,6 +18,7 @@ from core import (
     minimum_three_meal_budget,
     optimize,
     optimize_daily_meal_plan,
+    parse_meal_preferences,
 )
 from guardrails import authorize_state_change, validate_model_selection, validate_tool_call, validate_untrusted_text
 
@@ -54,7 +55,7 @@ def openrouter_rank(shortlist: list[dict], preferences: str) -> dict:
     compact = [{
         "plan_id": p["plan_id"],
         "schedule": [
-            f"{entry['label']} at {entry['eat_at']}: {entry['item']['item']} ({entry['item']['shop']})"
+            f"{entry['label']} at {entry['eat_at']}: {entry['quantity']:g} serving(s) of {entry['item']['item']} ({entry['item']['shop']})"
             for entry in p.get("schedule", [])
         ],
         "totals": p["totals"],
@@ -185,6 +186,14 @@ class Handler(SimpleHTTPRequestHandler):
                     "goal": str(body["goal"]),
                 })
                 targets = calculate_daily_targets(**profile)
+                meal_preferences = parse_meal_preferences(
+                    body["preferences"],
+                    {
+                        "breakfast": str(body.get("breakfast_preference", "any")),
+                        "lunch": str(body.get("lunch_preference", "any")),
+                        "dinner": str(body.get("dinner_preference", "any")),
+                    },
+                )
                 planning_args = validate_tool_call("create_daily_meal_plan", {
                     "daily_targets": {
                         "calories_kcal": targets["estimated_daily_calories_kcal"],
@@ -195,6 +204,7 @@ class Handler(SimpleHTTPRequestHandler):
                     "consumed_so_far": {"calories_kcal": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0, "cost_sgd": 0},
                     "budget_sgd": float(body["budget"]),
                     "food_mood": body["preferences"],
+                    "meal_preferences": meal_preferences,
                     "dietary_restrictions": [],
                     "allergies": [],
                     "origin": "NTU North Spine",
@@ -206,6 +216,7 @@ class Handler(SimpleHTTPRequestHandler):
                     targets["protein_target_g"],
                     targets["carb_target_g"],
                     rules=MEAL_RULES,
+                    meal_preferences=planning_args["meal_preferences"],
                 )
                 if not solution["available"]:
                     self._json({"targets": targets, "solution": solution, "model_pick": None, "ranking": None})

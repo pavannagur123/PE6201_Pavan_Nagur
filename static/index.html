@@ -31,8 +31,8 @@
             <div><span class="step-label">Your day</span><h2>Set the boundaries</h2></div>
             <span class="shield">Math checked</span>
           </div>
-          <label>Daily food budget <output id="budget-output">S$18.00</output>
-            <input id="budget" type="range" min="14.8" max="35" value="18" step="0.1">
+          <label>Daily food budget <output id="budget-output">S$25.00</output>
+            <input id="budget" type="range" min="14.8" max="50" value="25" step="0.1">
           </label>
           <p class="budget-floor" id="budget-floor">Checking the minimum cost for three meals…</p>
           <div class="three-col">
@@ -51,8 +51,22 @@
               <select id="goal"><option value="lose">Lose weight</option><option value="maintain" selected>Maintain</option><option value="gain">Gain weight</option></select>
             </label>
           </div>
+          <div class="meal-preference-box">
+            <span class="step-label">Hard meal preferences</span>
+            <div class="three-col">
+              <label>Breakfast
+                <select id="breakfast-preference"><option value="any">Any light meal</option><option value="vegetarian">Vegetarian</option><option value="chicken">Chicken</option></select>
+              </label>
+              <label>Lunch
+                <select id="lunch-preference"><option value="any">Any</option><option value="vegetarian">Vegetarian</option><option value="chicken">Chicken</option></select>
+              </label>
+              <label>Dinner
+                <select id="dinner-preference"><option value="any">Any</option><option value="vegetarian">Vegetarian</option><option value="chicken">Chicken</option></select>
+              </label>
+            </div>
+          </div>
           <label>What would make this feel right for you?
-            <textarea id="preferences" rows="3" placeholder="e.g. I like spicy Indian food, want variety, and avoid burgers">I like chicken and rice, but I want some variety.</textarea>
+            <textarea id="preferences" rows="3" placeholder="e.g. vegetarian for lunch and chicken for dinner">I want variety.</textarea>
           </label>
           <div class="mode-row">
             <label class="toggle"><input id="model-toggle" type="checkbox"><span></span>Use OpenRouter preference layer</label>

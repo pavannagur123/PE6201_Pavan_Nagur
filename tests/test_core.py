@@ -9,6 +9,7 @@ from core import (
     minimum_three_meal_budget,
     optimize,
     optimize_daily_meal_plan,
+    parse_meal_preferences,
 )
 from evaluate import run_evaluation
 
@@ -60,10 +61,11 @@ class MacroFitTests(unittest.TestCase):
         self.assertIn(pick["plan_id"], {p["plan_id"] for p in result["shortlist"]})
 
     def test_daily_plan_has_light_breakfast_lunch_and_dinner(self):
-        result = optimize_daily_meal_plan(self.menu, 18, 2200, 110, 275)
+        result = optimize_daily_meal_plan(self.menu, 25, 2200, 110, 275)
         self.assertTrue(result["available"])
         plan = result["optimizer_pick"]
-        self.assertLessEqual(plan["totals"]["price_sgd"], 18)
+        self.assertLessEqual(plan["totals"]["price_sgd"], 25)
+        self.assertGreaterEqual(plan["totals"]["kcal"], 2200 * 0.9)
         self.assertEqual([entry["meal"] for entry in plan["schedule"]], ["breakfast", "lunch", "dinner"])
         self.assertLessEqual(plan["schedule"][0]["item"]["kcal"], 500)
         self.assertNotEqual(plan["schedule"][0]["item"]["item"], "Chicken Rice")
@@ -75,6 +77,22 @@ class MacroFitTests(unittest.TestCase):
         result = optimize_daily_meal_plan(self.menu, minimum - 0.1, 2200, 110, 275)
         self.assertFalse(result["available"])
         self.assertIn("minimum", result["message"].lower())
+
+    def test_meal_specific_text_becomes_hard_constraints(self):
+        preferences = parse_meal_preferences("Maybe veg for lunch and chicken for dinner")
+        self.assertEqual(preferences, {"breakfast": "any", "lunch": "vegetarian", "dinner": "chicken"})
+        result = optimize_daily_meal_plan(self.menu, 30, 2633, 132, 329, meal_preferences=preferences)
+        self.assertTrue(result["available"])
+        plan = result["optimizer_pick"]
+        self.assertEqual(plan["schedule"][1]["item"]["cuisine"], "Vegetarian")
+        self.assertIn("Chicken", plan["schedule"][2]["item"]["item"])
+        self.assertGreaterEqual(plan["totals"]["kcal"], 2633 * 0.9)
+
+    def test_underfunded_target_returns_no_plan_and_required_budget(self):
+        result = optimize_daily_meal_plan(self.menu, 18, 2633, 132, 329)
+        self.assertFalse(result["available"])
+        self.assertGreater(result["minimum_target_budget_sgd"], 18)
+        self.assertIn("90%", result["message"])
 
     def test_actual_intake_analysis_uses_dataset_values(self):
         result = analyze_actual_intake(

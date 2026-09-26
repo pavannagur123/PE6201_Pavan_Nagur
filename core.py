@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
@@ -197,7 +198,25 @@ def optimize(menu: list[MenuItem], budget: float, protein_g: float, carbs_g: flo
     }
 
 
-def _items_for_meal(menu: list[MenuItem], rule: dict) -> list[MenuItem]:
+def parse_meal_preferences(text: str, explicit: dict | None = None) -> dict:
+    """Turn narrow meal-specific wording into deterministic optimizer constraints."""
+    result = {meal: (explicit or {}).get(meal, "any") for meal in ("breakfast", "lunch", "dinner")}
+    lowered = text.lower()
+    if re.search(r"\b(veg|vegetarian)\b.{0,20}\b(all meals|all day|everything)\b", lowered):
+        result = {meal: "vegetarian" for meal in result}
+    for meal in result:
+        if result[meal] != "any":
+            continue
+        veg_pattern = rf"(?:\b(?:veg|vegetarian)\b.{{0,24}}\b{meal}\b|\b{meal}\b.{{0,24}}\b(?:veg|vegetarian)\b)"
+        chicken_pattern = rf"(?:\bchicken\b.{{0,24}}\b{meal}\b|\b{meal}\b.{{0,24}}\bchicken\b)"
+        if re.search(veg_pattern, lowered):
+            result[meal] = "vegetarian"
+        elif re.search(chicken_pattern, lowered):
+            result[meal] = "chicken"
+    return result
+
+
+def _items_for_meal(menu: list[MenuItem], rule: dict, preference: str = "any") -> list[MenuItem]:
     allowed = set(rule.get("allowed_item_ids", []))
     excluded = set(rule.get("excluded_item_ids", []))
     maximum_kcal = rule.get("maximum_kcal")
@@ -206,7 +225,23 @@ def _items_for_meal(menu: list[MenuItem], rule: dict) -> list[MenuItem]:
         if (not allowed or item.item_id in allowed)
         and item.item_id not in excluded
         and (maximum_kcal is None or item.kcal <= maximum_kcal)
+        and (preference != "vegetarian" or item.cuisine == "Vegetarian")
+        and (preference != "chicken" or "chicken" in item.item.lower())
     ]
+
+
+def _weighted_totals(choices: tuple[tuple[MenuItem, float], ...]) -> dict:
+    return {
+        "price_sgd": round(sum(item.price_sgd * quantity for item, quantity in choices), 2),
+        "kcal": round(sum(item.kcal * quantity for item, quantity in choices)),
+        "protein_g": round(sum(item.protein_g * quantity for item, quantity in choices), 1),
+        "carbs_g": round(sum(item.carbs_g * quantity for item, quantity in choices), 1),
+        "fat_g": round(sum(item.fat_g * quantity for item, quantity in choices), 1),
+        "fibre_g": round(sum(item.fibre_g * quantity for item, quantity in choices), 1),
+        "sodium_mg": round(sum(item.sodium_mg * quantity for item, quantity in choices)),
+        "max_distance_km": round(max(item.distance_km for item, _ in choices), 1),
+        "max_walk_min": max(item.walk_min for item, _ in choices),
+    }
 
 
 def minimum_three_meal_budget(menu: list[MenuItem], rules: dict | None = None) -> float:
@@ -232,6 +267,7 @@ def optimize_daily_meal_plan(
     carbs_g: float,
     shortlist_size: int = 5,
     rules: dict | None = None,
+    meal_preferences: dict | None = None,
 ) -> dict:
     """Build exactly three scheduled meals using deterministic dataset rules."""
     rules = rules or load_meal_rules()
@@ -240,7 +276,11 @@ def optimize_daily_meal_plan(
         return {
             "available": False,
             "minimum_budget_sgd": minimum_budget,
+            "minimum_target_budget_sgd": None,
             "message": f"No valid three-meal day is available for S${budget:.2f}. The minimum is S${minimum_budget:.2f}.",
+            "reason": "budget_below_three_meal_minimum",
+            "calorie_shortfall_kcal": None,
+            "suggested_minimum_budget_sgd": minimum_budget,
             "evaluated_count": 0,
             "feasible_count": 0,
             "shortlist": [],
@@ -249,59 +289,130 @@ def optimize_daily_meal_plan(
 
     schedule_rules = rules["schedule"]
     meal_names = ("breakfast", "lunch", "dinner")
-    pools = [_items_for_meal(menu, schedule_rules[name]) for name in meal_names]
-    candidates = []
+    meal_preferences = meal_preferences or {name: "any" for name in meal_names}
+    if any(meal_preferences.get(name, "any") not in {"any", "vegetarian", "chicken"} for name in meal_names):
+        raise ValueError("Meal preferences must be any, vegetarian, or chicken.")
+    item_pools = [
+        _items_for_meal(menu, schedule_rules[name], meal_preferences.get(name, "any"))
+        for name in meal_names
+    ]
+    if any(not pool for pool in item_pools):
+        return {
+            "available": False,
+            "minimum_budget_sgd": minimum_budget,
+            "minimum_target_budget_sgd": None,
+            "message": "No menu items satisfy the selected meal-specific preferences.",
+            "reason": "meal_preference_unavailable",
+            "calorie_shortfall_kcal": None,
+            "suggested_minimum_budget_sgd": None,
+            "evaluated_count": 0,
+            "feasible_count": 0,
+            "shortlist": [],
+            "optimizer_pick": None,
+        }
+
+    quantity_pools = [
+        [(item, 1.0) for item in item_pools[0]],
+        [(item, quantity) for item in item_pools[1] for quantity in (1.0, 1.5, 2.0)],
+        [(item, quantity) for item in item_pools[2] for quantity in (1.0, 1.5, 2.0)],
+    ]
+    best = []
     evaluated_count = 0
-    for combo in itertools.product(*pools):
+    feasible_count = 0
+    minimum_target_budget = None
+    best_calories_within_budget = 0
+    calorie_floor = calories_kcal * 0.9
+    protein_floor = protein_g * 0.9
+    carbs_floor = carbs_g * 0.9
+    for choices in itertools.product(*quantity_pools):
+        combo = tuple(item for item, _ in choices)
         if len({item.item_id for item in combo}) != 3:
             continue
         evaluated_count += 1
-        totals = _totals(combo)
-        if totals["price_sgd"] > budget:
+        totals = _weighted_totals(choices)
+        if totals["price_sgd"] <= budget:
+            best_calories_within_budget = max(best_calories_within_budget, totals["kcal"])
+        meets_targets = (
+            totals["kcal"] >= calorie_floor
+            and totals["protein_g"] >= protein_floor
+            and totals["carbs_g"] >= carbs_floor
+        )
+        if meets_targets:
+            minimum_target_budget = totals["price_sgd"] if minimum_target_budget is None else min(minimum_target_budget, totals["price_sgd"])
+        if not meets_targets or totals["price_sgd"] > budget:
             continue
-        feasible, score, gaps = _score(totals, budget, protein_g, carbs_g, len({x.shop for x in combo}))
-        calorie_floor = calories_kcal * 0.8
-        calorie_gap = max(0.0, calorie_floor - totals["kcal"]) / max(calorie_floor, 1)
-        if calorie_gap:
-            feasible = False
-            score += calorie_gap * 2
-        gaps["calorie_gap"] = round(calorie_gap, 4)
-        plan_schedule = []
-        for meal, item in zip(meal_names, combo):
+        feasible_count += 1
+        score = (
+            abs(totals["kcal"] - calories_kcal) / calories_kcal * 0.62
+            + abs(totals["protein_g"] - protein_g) / protein_g * 0.16
+            + abs(totals["carbs_g"] - carbs_g) / carbs_g * 0.14
+            + totals["price_sgd"] / budget * 0.05
+            + totals["max_distance_km"] / 3 * 0.03
+        )
+        best.append((round(score, 5), totals["price_sgd"], choices, totals))
+        if len(best) > shortlist_size * 3:
+            best.sort(key=lambda row: (row[0], row[1], tuple(item.item_id for item, _ in row[2])))
+            del best[shortlist_size:]
+
+    best.sort(key=lambda row: (row[0], row[1], tuple(item.item_id for item, _ in row[2])))
+    shortlist = []
+    for score, _, choices, totals in best[:shortlist_size]:
+        schedule = []
+        for meal, (item, quantity) in zip(meal_names, choices):
             rule = schedule_rules[meal]
-            plan_schedule.append({
+            schedule.append({
                 "meal": meal,
                 "label": rule["label"],
                 "eat_at": rule["eat_at"],
                 "window": rule["window"],
+                "quantity": quantity,
                 "item": asdict(item),
             })
-        candidates.append({
-            "plan_id": "+".join(item.item_id for item in combo),
-            "items": [asdict(item) for item in combo],
-            "schedule": plan_schedule,
+        shortlist.append({
+            "plan_id": "+".join(f"{item.item_id}x{quantity:g}" for item, quantity in choices),
+            "items": [asdict(item) for item, _ in choices],
+            "schedule": schedule,
             "totals": totals,
-            "feasible": feasible,
-            "score": round(score, 5),
-            "gaps": gaps,
+            "feasible": True,
+            "score": score,
+            "gaps": {"calorie_gap": 0, "protein_gap": 0, "carb_gap": 0, "budget_gap": 0},
         })
 
-    candidates.sort(key=lambda x: (not x["feasible"], x["score"], x["totals"]["price_sgd"], x["plan_id"]))
-    shortlist = candidates[:shortlist_size]
+    if not shortlist:
+        if minimum_target_budget is None:
+            message = "No three-meal combination in the current dataset reaches 90% of the calculated calorie and macro estimates."
+        else:
+            message = f"No plan can reach 90% of the calculated targets within S${budget:.2f}. Increase the budget to at least S${minimum_target_budget:.2f}."
+        return {
+            "available": False,
+            "minimum_budget_sgd": minimum_budget,
+            "minimum_target_budget_sgd": minimum_target_budget,
+            "message": message,
+            "reason": "targets_unavailable_within_budget" if minimum_target_budget is not None else "targets_unavailable_in_dataset",
+            "calorie_shortfall_kcal": max(0, round(calorie_floor - best_calories_within_budget)),
+            "suggested_minimum_budget_sgd": minimum_target_budget,
+            "evaluated_count": evaluated_count,
+            "feasible_count": 0,
+            "shortlist": [],
+            "optimizer_pick": None,
+        }
     return {
-        "available": bool(shortlist),
+        "available": True,
         "minimum_budget_sgd": minimum_budget,
-        "message": "" if shortlist else "No valid three-meal plan was found.",
+        "minimum_target_budget_sgd": round(minimum_target_budget, 2),
+        "message": "",
         "inputs": {
             "budget": budget,
             "calories_kcal": calories_kcal,
             "protein_g": protein_g,
             "carbs_g": carbs_g,
+            "threshold": 0.9,
+            "meal_preferences": meal_preferences,
         },
         "evaluated_count": evaluated_count,
-        "feasible_count": sum(1 for candidate in candidates if candidate["feasible"]),
+        "feasible_count": feasible_count,
         "shortlist": shortlist,
-        "optimizer_pick": shortlist[0] if shortlist else None,
+        "optimizer_pick": shortlist[0],
     }
 
 
