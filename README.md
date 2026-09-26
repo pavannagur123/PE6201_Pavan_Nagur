@@ -19,15 +19,28 @@ python3 app.py
 
 Open <http://localhost:8000>.
 
-The optimizer and demo preference mode work immediately. To use a real Claude call:
+The optimizer and demo preference mode work immediately. To use OpenRouter, copy the safe local template:
 
 ```bash
-export ANTHROPIC_API_KEY="your-key"
-export ANTHROPIC_MODEL="your-enabled-model-id"
-python3 app.py
+cp .env.example .env
 ```
 
-The API key stays on the local server and is never sent to the browser or written to disk.
+Edit `.env` in VS Code:
+
+```text
+OPENROUTER_API_KEY=your-key
+OPENROUTER_MODEL=qwen/qwen3.8-27b:free
+OPENROUTER_APP_URL=http://localhost:8000
+PORT=8000
+```
+
+Then run `python3 app.py`. The `.env` file is ignored by Git. The key stays on the local server, is sent only to OpenRouter in the authorization header, and is never sent to the browser. Never put a real key in `.env.example`.
+
+To move to GPT-5.6 later, change only:
+
+```text
+OPENROUTER_MODEL=openai/gpt-5.6-sol-pro
+```
 
 ## What is in the prototype
 
@@ -36,7 +49,7 @@ The API key stays on the local server and is never sent to the browser or writte
 - Nutrition mapping method, source family, mapper, date, and confidence for every row.
 - Exact enumeration of 1-3 item daily plans, with fixed dummy distance from NTU North Spine included in ranking.
 - A five-plan shortlist with explicit feasibility and normalized distance scores.
-- Optional Claude ranking, restricted to that shortlist.
+- Optional OpenRouter ranking, restricted to that shortlist, using Qwen by default.
 - A blind A/B evaluator with 20 fixed user cases, randomized left/right display, local progress, and CSV export.
 - A methodology/data page that makes the dummy-data limitations visible.
 
@@ -45,7 +58,7 @@ The API key stays on the local server and is never sent to the browser or writte
 For each of the 20 fixed cases:
 
 1. The optimizer produces the shortlist and selects its top mathematical plan.
-2. Claude receives the *same shortlist* plus the case's stated food preferences and chooses one plan.
+2. The configured OpenRouter model receives the *same shortlist* plus the case's stated food preferences and chooses one plan.
 3. The app randomizes the two plans as A and B and hides which system chose which.
 4. The evaluator answers: **Which one would you actually eat?**
 5. After all cases, export the CSV and report the model win rate, optimizer win rate, ties, and valid sample size.
@@ -80,12 +93,12 @@ python3 -m unittest discover -s tests -v
 python3 evaluate.py --mode optimizer
 ```
 
-The evaluation command writes a detailed JSON report under `output/evaluation/`. Use `--mode demo` to exercise the transparent preference heuristic or `--mode claude` after configuring Claude. The automated report checks constraints; the web app's blind A/B study measures which recommendation a human would actually eat.
+The evaluation command writes a detailed JSON report under `output/evaluation/`. Use `--mode demo` to exercise the transparent preference heuristic or `--mode openrouter` after configuring OpenRouter. The OpenRouter evaluation makes 20 API calls. The automated report checks constraints; the web app's blind A/B study measures which recommendation a human would actually eat.
 
 ## Project structure
 
 ```text
-app.py                 local web server and Claude API adapter
+app.py                 local web server and OpenRouter API adapter
 core.py                dataset loading and deterministic optimizer
 data/menu.json         60 item/outlet/price/location/distance records
 data/nutrition.json    60 macro and nutrition-provenance records

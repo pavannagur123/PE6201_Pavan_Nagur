@@ -10,8 +10,8 @@ from core import ROOT, demo_preference_pick, load_eval_cases, load_menu, optimiz
 
 def run_evaluation(mode: str = "optimizer") -> dict:
     """Run the fixed 20-case backend evaluation and return JSON-safe results."""
-    if mode not in {"optimizer", "demo", "claude"}:
-        raise ValueError("mode must be optimizer, demo, or claude")
+    if mode not in {"optimizer", "demo", "openrouter"}:
+        raise ValueError("mode must be optimizer, demo, or openrouter")
 
     menu = load_menu()
     results = []
@@ -41,10 +41,10 @@ def run_evaluation(mode: str = "optimizer") -> dict:
         if mode == "demo":
             ranking = demo_preference_pick(solution["shortlist"], case["preferences"])
             row["preference_pick"] = ranking
-        elif mode == "claude":
-            from app import claude_rank
+        elif mode == "openrouter":
+            from app import openrouter_rank
 
-            row["preference_pick"] = claude_rank(solution["shortlist"], case["preferences"])
+            row["preference_pick"] = openrouter_rank(solution["shortlist"], case["preferences"])
         results.append(row)
 
     passing = sum(x["all_constraints_pass"] for x in results)
@@ -73,7 +73,7 @@ def run_evaluation(mode: str = "optimizer") -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run MacroFit's fixed backend evaluation.")
-    parser.add_argument("--mode", choices=("optimizer", "demo", "claude"), default="optimizer")
+    parser.add_argument("--mode", choices=("optimizer", "demo", "openrouter"), default="optimizer")
     parser.add_argument("--output", type=Path, default=ROOT / "output" / "evaluation" / "evaluation_results.json")
     args = parser.parse_args()
     report = run_evaluation(args.mode)
