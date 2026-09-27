@@ -23,7 +23,7 @@ Open <http://localhost:8000>.
 
 ## Run experiments in Google Colab
 
-Open `MacroFit_Colab_Trial.ipynb` in Colab and run it one cell at a time. Upload this repository folder to Google Drive, mount Drive in the first executable cell, and update `PROJECT_FOLDER` if your Drive path is different. The notebook separately demonstrates dataset loading and joining, profile calculations, meal-specific constraints, budget comparisons, the 90% nutrition threshold, optional OpenRouter ranking, and actual-intake analysis. The OpenRouter key is requested with hidden input and is not written to the notebook or Drive.
+Open `MacroFit_Colab_Trial.ipynb` in Colab and run it one cell at a time. Upload this repository folder to Google Drive, mount Drive in the first executable cell, and update `PROJECT_FOLDER` if your Drive path is different. The notebook separately demonstrates dataset loading and joining, profile calculations, meal-specific constraints, budget comparisons, and the 90% nutrition threshold. It also contains three active AI layers—natural-language preference interpretation, subjective plan criticism, and deviation-aware replanning—behind six-field tool descriptors, a strict tool allowlist, closed schemas, prompt-injection checks, call and token caps, action deduplication, and an offline guardrail checklist. The OpenRouter key is requested with hidden input and is not written to the notebook or Drive.
 
 The optimizer and demo preference mode work immediately. To use OpenRouter, copy the safe local template:
 
