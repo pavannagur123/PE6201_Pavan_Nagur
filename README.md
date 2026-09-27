@@ -21,6 +21,10 @@ python3 app.py
 
 Open <http://localhost:8000>.
 
+## Run experiments in Google Colab
+
+Open `MacroFit_Colab_Trial.ipynb` in Colab and run it one cell at a time. Upload this repository folder to Google Drive, mount Drive in the first executable cell, and update `PROJECT_FOLDER` if your Drive path is different. The notebook separately demonstrates dataset loading and joining, profile calculations, meal-specific constraints, budget comparisons, the 90% nutrition threshold, optional OpenRouter ranking, and actual-intake analysis. The OpenRouter key is requested with hidden input and is not written to the notebook or Drive.
+
 The optimizer and demo preference mode work immediately. To use OpenRouter, copy the safe local template:
 
 ```bash
@@ -110,6 +114,7 @@ The evaluation command writes a detailed JSON report under `output/evaluation/`.
 ```text
 app.py                 local web server and OpenRouter API adapter
 core.py                profile target calculation, dataset loading, and deterministic optimizer
+MacroFit_Colab_Trial.ipynb  cell-by-cell Google Drive and Colab experiment
 data/menu.json         60 item/outlet/price/location/distance records
 data/nutrition.json    60 macro and nutrition-provenance records
 data/meal_rules.json   meal suitability, light-breakfast allowlist, and suggested times
